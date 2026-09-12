@@ -1,0 +1,47 @@
+# Virtual environment
+env/
+venv/
+*.venv
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# VS Code
+.vscode/
+
+# Broken files from Run button / Code Runner (never use these anyway)
+tempCodeRunnerFile.py
+
+# Calibration logging data (CalibrationLogger writes data/calibration_log.db)
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Video/image recordings - IMPORTANT: this project uses a live webcam,
+# never commit recorded footage or captured frames of yourself
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+*.jpg
+*.jpeg
+*.png
+recordings/
+captures/
+snapshots/
+
+# Word documents / data files
+*.docx
+*.csv
+*.xlsx
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

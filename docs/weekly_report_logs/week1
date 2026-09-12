@@ -1,0 +1,21 @@
+# Week 1 — Progress Notes
+
+## What was built
+- Sensing layer: `src/sensing/camera_capture.py` — webcam capture via OpenCV
+- Perception layer (first pass): `src/perception/face_mesh.py` — MediaPipe
+  Face Mesh integration, 6-point eye landmark extraction
+- Verification script: `verify_face_tracking.py`
+
+## Results
+- Average FPS: 29.3 (Windows, [fill in your CPU/laptop model])
+- Eye landmark tracking: 6 dots
+- Face detection status indicator: working
+
+## Issues encountered and resolved
+- Webcam driver issue on Windows (MSMF backend failing to grab frames) —
+  resolved by [driver update / DSHOW backend / whichever actually fixed it]
+- Python 3.14 incompatible with MediaPipe — resolved by creating venv with
+  Python 3.11.9 specifically
+- VS Code Code Runner extension was using wrong interpreter — switched to
+  running via integrated terminal directly
+
