@@ -1,8 +1,8 @@
 """
 src/core/intent_fusion_engine.py
 
-Week 9: Multimodal Fusion Engine
---------------------------------
+Week 9/10: Multimodal Fusion Engine
+------------------------------------
 Combines the two independent outputs of GazeBlinkEngine (zone + blink)
 into a single "intent" signal:
 
@@ -12,35 +12,29 @@ into a single "intent" signal:
     - ONE extra-long blink hold (>= EXTRA_LONG_BLINK_MIN_FRAMES)
       -> SOS_TRIGGERED immediately (cancels any pending selection)
 
-REDESIGNED (post-live-testing, round 3): the original SOS design
-required 3 discrete long blinks landing within a tight consecutive-gap
-window. Extensive live testing (including with the window widened
-from 1.0s -> 1.5s -> 2.5s) showed this timed multi-blink sequence was
-very difficult to execute reliably even for an able-bodied tester.
-Since the target users are non-verbal/motor-impaired individuals with
-LESS precise motor control, this was judged a fundamental usability
-problem with the gesture design, not a tuning problem.
+HISTORY: original design used 3 discrete long blinks for SOS. Live
+testing (round 1, Week 9) showed this was hard to execute reliably
+even for an able-bodied tester despite widening the timing window
+1.0s -> 1.5s -> 2.5s - led to this single-hold, duration-based
+redesign (validated: selection 16-39 frames, SOS holds 87-103 frames).
 
-REPLACED WITH: a single sustained eye closure held past a second,
-higher threshold (EXTRA_LONG_BLINK_MIN_FRAMES) triggers SOS directly.
-This is one continuous motor action instead of a precisely-timed
-sequence, and removes the entire class of bugs previously seen
-(inter-blink gap timing, cooldown collisions with prior selections,
-premature pending-resolution). It also better matches the physical
-capabilities of the actual target population.
+Later reverted back to 3-blink-count by request, with an added fix
+gating SOS blinks on zone == CENTER to stop selection blinks and SOS
+blinks from being confused with each other. That fix worked for the
+mixing problem, but live testing (round 2) reproduced the exact same
+timing/sequencing difficulty as round 1 - every attempt reset at
+blink #1, individual blink hold durations were wildly inconsistent
+(20-136 frames), and the 1.5s window was consistently missed. Same
+root cause as before: timed multi-blink sequencing is unreliable
+regardless of which zone gates it.
 
-VALIDATED (live testing): selection long-blinks measured 16-39 frames,
-SOS holds measured 87-103 frames - a clean ~48-frame gap around the
-EXTRA_LONG_BLINK_MIN_FRAMES=45 threshold, confirming no retuning
-needed on first measurement.
-
-NOTE: this requires the raw blink_duration_frames value (not just the
-short/long label) so SOS can be distinguished from a normal selection
-long-blink. Exposed via GazeBlinkEngine.EngineResult.blink_duration_frames.
-
-DEBUG FUSION prints removed after live confirmation that SOS_TRIGGERED
-fires correctly and reliably (see docs/architecture_week9.md for the
-measured data that validated this).
+REVERTED AGAIN (by request) to this single-hold design, since it has
+no sequencing/timing requirement at all - the difficulty class that
+broke 3-blink twice doesn't apply here. EXTRA_LONG_BLINK_MIN_FRAMES
+set to 60 (raised from the original 45) per earlier live-measured
+data: selection blinks measured up to 41 frames, SOS holds measured
+as low as 68 frames across two runs - 60 sits comfortably in that
+gap, favoring a more deliberate hold over the original 45.
 """
 
 from dataclasses import dataclass
@@ -73,10 +67,12 @@ class IntentFusionEngine:
     LONG_BLINK_SEQUENCE_WINDOW_SEC = 1.5
 
     # A single blink held at least this many frames is treated as an
-    # SOS hold instead of a normal selection blink. Validated via live
-    # testing: selection blinks measured 16-39 frames, SOS holds
-    # measured 87-103 frames - comfortable margin around this value.
-    EXTRA_LONG_BLINK_MIN_FRAMES = 45
+    # SOS hold instead of a normal selection blink. Originally 45
+    # (Week 9: selection 16-39, SOS 87-103). Raised to 60 after a
+    # second live run showed selection blinks up to 41 frames and SOS
+    # holds as low as 68 frames - 60 sits in the middle of that gap,
+    # favoring a more deliberate SOS gesture.
+    EXTRA_LONG_BLINK_MIN_FRAMES = 60
 
     COOLDOWN_SEC = 1.5
 
