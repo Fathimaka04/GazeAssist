@@ -1,6 +1,44 @@
 """
 verify_intent_fusion_live.py
+
+Week 9 live verification: wires IntentFusionEngine on top of
+GazeBlinkEngine, using a real camera feed, to test ZONE_SELECTED and
+SOS_TRIGGERED behavior with real blinks - not fake timestamps.
+
+Does NOT modify verify_calibrated_system.py or GazeBlinkEngine's own
+calibration/display flow - this is a new, separate script, following
+the same "engine does logic, script does display" pattern as
+verify_calibrated_system.py.
+
+UPDATED (SOS redesign): passes result.blink_duration_frames into
+fusion.update() so IntentFusionEngine can distinguish a normal
+selection long-blink from an extra-long SOS hold.
+
+UPDATED (Week 10): wires SafetyStateMachine on top of the engine
+status + intent event, so the overall app-level state
+(IDLE/ACTIVE/UNCERTAIN/SOS_ARMED/SOS_TRIGGERED) is computed and
+displayed every frame.
+
+UPDATED (Week 10, SOS confirm step): SOS now requires an arm + confirm
+sequence (IntentType.SOS_ARMED then SOS_TRIGGERED). Displays "SOS
+ARMED" on screen and prints when an arm attempt expires unconfirmed.
+
+UPDATED (selection simplified): IntentType.PENDING no longer exists -
+selection now resolves directly to ZONE_SELECTED in a single frame,
+so the old PENDING display branch has been removed.
+
+IMPORTANT: if EngineResult does not actually expose a field called
+blink_duration_frames, this line will throw an AttributeError - check
+gaze_blink_engine.py's EngineResult definition and correct the
+attribute name below if it's called something else.
+
+Run with:
+    python verify_intent_fusion_live.py
+(terminal only - not the VS Code Run button)
+
+Press 'q' to quit.
 """
+
 
 import cv2
 import time
@@ -70,13 +108,7 @@ def main():
                 cv2.putText(display_frame, f"Zone: {result.zone}",
                             (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
 
-                if intent_event.type == IntentType.PENDING:
-                    msg = f"PENDING: {intent_event.zone} (blink #{intent_event.long_blink_count})"
-                    print(msg)
-                    cv2.putText(display_frame, msg,
-                                (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 200, 255), 2)
-
-                elif intent_event.type == IntentType.ZONE_SELECTED:
+                if intent_event.type == IntentType.ZONE_SELECTED:
                     msg = f"ZONE_SELECTED: {intent_event.zone}"
                     print(msg)
                     cv2.putText(display_frame, msg,
@@ -127,4 +159,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
