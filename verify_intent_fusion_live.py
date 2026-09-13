@@ -1,44 +1,6 @@
 """
 verify_intent_fusion_live.py
-
-Week 9 live verification: wires IntentFusionEngine on top of
-GazeBlinkEngine, using a real camera feed, to test ZONE_SELECTED and
-SOS_TRIGGERED behavior with real blinks - not fake timestamps.
-
-Does NOT modify verify_calibrated_system.py or GazeBlinkEngine's own
-calibration/display flow - this is a new, separate script, following
-the same "engine does logic, script does display" pattern as
-verify_calibrated_system.py.
-
-UPDATED (SOS redesign): now passes result.blink_duration_frames into
-fusion.update() so IntentFusionEngine can distinguish a normal
-selection long-blink from an extra-long SOS hold. Previously this
-was omitted, silently defaulting to 0 inside update() - meaning SOS
-could never trigger no matter how long the hold was.
-
-UPDATED (Week 10): wires SafetyStateMachine on top of the engine
-status + intent event, so the overall app-level state
-(IDLE/ACTIVE/UNCERTAIN/SOS_TRIGGERED) is computed and displayed every
-frame, not just during "ready". intent_type is passed as None on any
-frame where fusion.update() wasn't run (i.e. anything other than
-"ready" status) - SafetyStateMachine already treats intent_type=None
-as "no fusion event this frame" and falls back to engine_status-based
-logic. Also added a minimal on-screen line for the "no_face" status,
-which previously had no display branch at all, so the UNCERTAIN state
-has some visible context instead of just a bare state banner.
-
-IMPORTANT: if EngineResult does not actually expose a field called
-blink_duration_frames, this line will throw an AttributeError - check
-gaze_blink_engine.py's EngineResult definition and correct the
-attribute name below if it's called something else.
-
-Run with:
-    python verify_intent_fusion_live.py
-(terminal only - not the VS Code Run button)
-
-Press 'q' to quit.
 """
-
 
 import cv2
 import time
@@ -49,7 +11,6 @@ from src.core.intent_fusion_engine import IntentFusionEngine, IntentType
 from src.core.safety_state_machine import SafetyStateMachine, SafetyState
 
 
-# Colors (BGR) for each overall safety state, used for the bottom status banner
 STATE_COLORS = {
     SafetyState.IDLE: (0, 255, 255),
     SafetyState.ACTIVE: (0, 255, 0),
@@ -65,6 +26,8 @@ def main():
     fusion = IntentFusionEngine()
     safety = SafetyStateMachine()
 
+    last_intent_type = IntentType.NONE
+
     print("Starting... calibration will run first, same as verify_calibrated_system.py")
 
     try:
@@ -73,9 +36,6 @@ def main():
 
             display_frame = frame.copy()
 
-            # intent_event is only produced during "ready" frames (fusion needs a
-            # classified zone + blink to work with). On every other status it stays
-            # None, and SafetyStateMachine falls back to engine_status-based logic.
             intent_event = None
 
             if result.status == "calibrating_blink":
@@ -122,13 +82,23 @@ def main():
                     cv2.putText(display_frame, msg,
                                 (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 3)
 
+                elif intent_event.type == IntentType.SOS_ARMED:
+                    if last_intent_type != IntentType.SOS_ARMED:
+                        print("SOS_ARMED - hold another long blink to confirm")
+                    cv2.putText(display_frame, "SOS ARMED - confirm with another long blink",
+                                (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 140, 255), 2)
+
                 elif intent_event.type == IntentType.SOS_TRIGGERED:
                     msg = "SOS_TRIGGERED"
                     print(msg)
                     cv2.putText(display_frame, msg,
                                 (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 3)
 
-            # --- Week 10: overall safety state, computed every frame regardless of status ---
+                elif intent_event.type == IntentType.NONE and last_intent_type == IntentType.SOS_ARMED:
+                    print("SOS ARM EXPIRED - cancelled (no confirm in time)")
+
+                last_intent_type = intent_event.type
+
             state_result = safety.update(
                 result.status,
                 intent_event.type if intent_event is not None else None
@@ -157,3 +127,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
