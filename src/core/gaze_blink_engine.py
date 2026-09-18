@@ -90,8 +90,11 @@ VERTICAL_SMOOTHING_FRAMES = 5
 # --- Blink duration classification (Week 9) ---
 # Frame threshold for short-blink vs long-blink. This needs to be
 # MEASURED against real long blinks like every other constant here -
-# 10 frames (~0.33s at 30fps) is a starting guess, not a final value.
-LONG_BLINK_MIN_FRAMES = 9
+# 9 frames (~0.3s at 30fps) is a starting guess, not a final value.
+# CURRENTLY BEING RE-MEASURED (post blink_classifier.py duration-fix)
+# because the old duration measurement undercounted holds broken up
+# by EAR noise; now that it's fixed, this threshold may need to move.
+LONG_BLINK_MIN_FRAMES = 13
 
 DIRECTIONS = ["LEFT", "RIGHT", "UP", "DOWN"]
 DIRECTION_PROMPTS = {
@@ -220,10 +223,10 @@ class GazeBlinkEngine:
         # --- Phase 1: blink baseline calibration ---
         if not self.calibration.is_calibrated:
             self.calibration.add_sample(ear, raw_gaze_x, raw_gaze_y, time.time())
-            current, total = self.calibration.get_progress()
-            return EngineResult(status="calibrating_blink",
-                                 progress_current=current, progress_total=total)
-
+            current, total, phase = self.calibration.get_progress()
+            status = "calibrating_blink_open" if phase == "open" else "calibrating_blink_closed"
+            return EngineResult(status=status,
+                         progress_current=current, progress_total=total)
         if self.blink_detector is None:
             self.blink_detector = BlinkClassifier(ear_threshold=self.calibration.ear_threshold)
 
@@ -388,6 +391,7 @@ class GazeBlinkEngine:
             )
 
         self.directions_done = True
+        print(self.calibration.get_summary())
         return EngineResult(status="ready", zone=self.zone, zone_changed=False,
                              blink_count=0, blink_just_occurred=False, blink_type=None,
                              blink_duration_frames=None,
@@ -398,12 +402,12 @@ class GazeBlinkEngine:
 
         # TEMPORARY - measuring real blink durations. Remove after
         # picking a real value for LONG_BLINK_MIN_FRAMES.
-        
 
         blink_type = None
         blink_duration_frames = None
         if blink_just_occurred:
             blink_duration_frames = self.blink_detector.last_blink_duration_frames
+            print(f"DEBUG BLINK: zone={self.zone}, RAW duration_frames={blink_duration_frames}")
             if blink_duration_frames >= LONG_BLINK_MIN_FRAMES:
                 blink_type = "long"
             else:

@@ -98,7 +98,7 @@ def main():
         print(f"EAR min:  {min(ear_log):.3f}")
         print(f"EAR max:  {max(ear_log):.3f}")
         print(f"EAR mean: {sum(ear_log)/len(ear_log):.3f}")
-    print("Copy this whole summary block back for review.")
+    # print("Copy this whole summary block back for review.")
 
 
 if __name__ == "__main__":

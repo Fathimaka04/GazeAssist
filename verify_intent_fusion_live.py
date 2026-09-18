@@ -76,9 +76,17 @@ def main():
 
             intent_event = None
 
-            if result.status == "calibrating_blink":
-                cv2.putText(display_frame, f"Calibrating blink: {result.progress_current}/{result.progress_total}",
-                            (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+            if result.status == "calibrating_blink_open":
+                cv2.putText(display_frame, "Keep eyes OPEN, look at camera naturally...",
+                (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+                cv2.putText(display_frame, f"{result.progress_current}/{result.progress_total}",
+                (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
+
+            elif result.status == "calibrating_blink_closed":
+                cv2.putText(display_frame, "Now CLOSE your eyes and HOLD...",
+                (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 140, 255), 2)
+                cv2.putText(display_frame, f"{result.progress_current}/{result.progress_total}",
+                (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 140, 255), 2)
 
             elif result.status == "calibrating_pose":
                 cv2.putText(display_frame, "Calibrating pose...",
