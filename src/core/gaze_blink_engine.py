@@ -98,10 +98,10 @@ LONG_BLINK_MIN_FRAMES = 13
 
 DIRECTIONS = ["LEFT", "RIGHT", "UP", "DOWN"]
 DIRECTION_PROMPTS = {
-    "LEFT": "Look/Turn LEFT",
-    "RIGHT": "Look/Turn RIGHT",
-    "UP": "Tilt chin UP + eyes UP",
-    "DOWN": "Tilt chin DOWN + eyes DOWN",
+    "LEFT": "Water",
+    "RIGHT": "Bathroom",
+    "UP": "Food",
+    "DOWN": "Help",
 }
 
 
